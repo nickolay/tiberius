@@ -133,6 +133,7 @@ impl<'a> Encode<BytesMut> for RpcParam<'a> {
         }
 
         dst.put_u8(self.flags.bits());
+        self.value.encode_type_info_for_rpc(dst)?;
         self.value.encode(dst)?;
 
         let dst: &mut [u8] = dst.borrow_mut();
