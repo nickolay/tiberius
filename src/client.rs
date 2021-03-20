@@ -12,7 +12,9 @@ use crate::{
     tds::{codec, stream::TokenStream},
     SqlReadBytes, ToSql,
 };
-use codec::{BatchRequest, ColumnData, PacketHeader, RpcParam, RpcProcId, TokenRpcRequest};
+use codec::{
+    BatchRequest, BulkLoadRequest, ColumnData, PacketHeader, RpcParam, RpcProcId, TokenRpcRequest,
+};
 use enumflags2::BitFlags;
 use futures::{AsyncRead, AsyncWrite};
 use std::{borrow::Cow, fmt::Debug};
@@ -281,6 +283,39 @@ impl<S: AsyncRead + AsyncWrite + Unpin + Send> Client<S> {
 
         let id = self.connection.context_mut().next_packet_id();
         self.connection.send(PacketHeader::rpc(id), req).await?;
+
+        Ok(())
+    }
+
+    /// TODO: what the API should look like?
+    pub async fn bulk_load<'a, 'b>(&'a mut self, table: &str) -> crate::Result<()> {
+        self.connection.flush_stream().await?;
+
+        // 2.2.1.5 Bulk Load
+        // 1) first send the INSERT BULK SQL statement
+        let query = format!("INSERT BULK {} (content tinyint)", table); // TODO hardcoded structure
+        let req = BatchRequest::new(query, self.connection.context().transaction_descriptor());
+        let id = self.connection.context_mut().next_packet_id();
+        self.connection.send(PacketHeader::batch(id), req).await?;
+
+        // Wait for the response from the server
+        let ts = TokenStream::new(&mut self.connection);
+        // TODO: `flush_done` handles the DONE token and some error responses, but I haven't verified
+        // it's completely appropriate in this context.
+        // TDS4-era documentaion postulates that the server must respond with a DONE token
+        // <https://docs.microsoft.com/en-us/openspecs/sql_server_protocols/ms-sstds/53ab0525-b677-4512-9b85-9db1dd9bb41f>
+        // but I couldn't find this in contemporary documentation. Same applies to the other request below.
+        ts.flush_done().await?;
+
+        // 2) BulkLoadBCP stream, consisting of [2.2.6.1] COLMETADATA token + ROW tokens + DONE
+        let id = self.connection.context_mut().next_packet_id();
+        let req = BulkLoadRequest::new();
+        self.connection
+            .send(PacketHeader::bulk_load(id), req)
+            .await?;
+
+        let ts = TokenStream::new(&mut self.connection);
+        ts.flush_done().await?;
 
         Ok(())
     }

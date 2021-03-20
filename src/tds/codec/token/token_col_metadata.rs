@@ -1,9 +1,11 @@
 use crate::{
     error::Error,
-    tds::codec::{FixedLenType, TypeInfo, VarLenType},
-    ColumnData, SqlReadBytes,
+    tds::codec::{Encode, FixedLenType, TypeInfo, VarLenType},
+    ColumnData, Result, SqlReadBytes, TokenType,
 };
+use bytes::{BufMut, BytesMut};
 use enumflags2::BitFlags;
+use std::borrow::BorrowMut;
 
 #[derive(Debug)]
 pub struct TokenColMetaData {
@@ -206,5 +208,49 @@ impl BaseMetaDataColumn {
         }
 
         Ok(BaseMetaDataColumn { flags, ty })
+    }
+}
+
+// Encoding according to rules in 2.2.7.4 COLMETADATA
+
+impl Encode<BytesMut> for TokenColMetaData {
+    fn encode(self, dst: &mut BytesMut) -> Result<()> {
+        dst.put_u8(TokenType::ColMetaData as u8);
+        dst.put_u16_le(self.columns.len() as u16); // TODO: should we care about >65k columns?
+        for col in self.columns.into_iter() {
+            col.encode(dst)?;
+        }
+        Ok(())
+    }
+}
+
+impl Encode<BytesMut> for MetaDataColumn {
+    fn encode(self, dst: &mut BytesMut) -> Result<()> {
+        dst.put_u32_le(0); // TODO: UserType
+        self.base.encode(dst)?; // Flags, TYPE_INFO
+
+        // column name
+        // writing the length later
+        let len_pos = dst.len();
+        let mut length = 0u8;
+        dst.put_u8(length);
+
+        for chr in self.col_name.encode_utf16() {
+            length += 1;
+            dst.put_u16_le(chr);
+        }
+
+        let dst: &mut [u8] = dst.borrow_mut();
+        dst[len_pos] = length;
+
+        Ok(())
+    }
+}
+
+impl Encode<BytesMut> for BaseMetaDataColumn {
+    fn encode(self, dst: &mut BytesMut) -> Result<()> {
+        dst.put_u16_le(BitFlags::bits(self.flags));
+        self.ty.encode(dst)?; // TYPE_INFO
+        Ok(())
     }
 }

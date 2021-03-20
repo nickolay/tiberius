@@ -1,9 +1,13 @@
-use crate::{tds::codec::ColumnData, SqlReadBytes};
+use crate::{
+    tds::codec::{ColumnData, Encode},
+    Result, SqlReadBytes, TokenType,
+};
+use bytes::{BufMut, BytesMut};
 use futures::io::AsyncReadExt;
 
 #[derive(Debug)]
 pub struct TokenRow {
-    data: Vec<ColumnData<'static>>,
+    pub(crate) data: Vec<ColumnData<'static>>, // TODO temporarily made public for `impl Encode<BytesMut> for BulkLoadRequest`
 }
 
 impl IntoIterator for TokenRow {
@@ -71,6 +75,16 @@ impl TokenRow {
     /// bounds.
     pub fn get(&self, index: usize) -> Option<&ColumnData<'static>> {
         self.data.get(index)
+    }
+}
+
+impl Encode<BytesMut> for TokenRow {
+    fn encode(self, dst: &mut BytesMut) -> Result<()> {
+        dst.put_u8(TokenType::Row as u8);
+        for col_value in self.data.into_iter() {
+            col_value.encode(dst)?;
+        }
+        Ok(())
     }
 }
 

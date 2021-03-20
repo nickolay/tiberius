@@ -100,6 +100,14 @@ impl PacketHeader {
         }
     }
 
+    pub fn bulk_load(id: u8) -> Self {
+        Self {
+            ty: PacketType::BulkLoad,
+            status: PacketStatus::NormalMessage, // TODO: not sure if this is ever used given the code in Connection::send
+            ..Self::new(0, id)
+        }
+    }
+
     pub fn set_status(&mut self, status: PacketStatus) {
         self.status = status;
     }

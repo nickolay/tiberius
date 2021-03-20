@@ -367,6 +367,34 @@ where
 }
 
 #[test_on_runtimes]
+async fn bulk_load_tinyint<S>(mut conn: tiberius::Client<S>) -> Result<()>
+where
+    S: AsyncRead + AsyncWrite + Unpin + Send,
+{
+    let table = random_table().await;
+
+    conn.execute(
+        format!("CREATE TABLE ##{} (content TINYINT NOT NULL)", table),
+        &[],
+    )
+    .await?;
+
+    let _res = conn.bulk_load(&format!("##{}", table)).await?;
+
+    let rows = conn
+        .query(format!("SELECT content FROM ##{}", table), &[])
+        .await?
+        .into_first_result()
+        .await?;
+    assert_eq!(2, rows.len());
+
+    assert_eq!(Some(7u8), rows[0].get(0));
+    assert_eq!(Some(19u8), rows[1].get(0));
+
+    Ok(())
+}
+
+#[test_on_runtimes]
 async fn execute_insert_update_delete<S>(mut conn: tiberius::Client<S>) -> Result<()>
 where
     S: AsyncRead + AsyncWrite + Unpin + Send,

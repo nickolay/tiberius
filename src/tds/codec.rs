@@ -1,4 +1,5 @@
 mod batch_request;
+mod bulk_load_request;
 mod column_data;
 mod decode;
 mod encode;
@@ -12,6 +13,7 @@ mod token;
 mod type_info;
 
 pub use batch_request::*;
+pub use bulk_load_request::*;
 use bytes::BytesMut;
 pub use column_data::*;
 pub use decode::*;

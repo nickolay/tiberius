@@ -1,4 +1,5 @@
-use crate::{tds::Collation, xml::XmlSchema, Error, SqlReadBytes};
+use crate::{tds::codec::Encode, tds::Collation, xml::XmlSchema, Error, Result, SqlReadBytes};
+use bytes::{BufMut, BytesMut};
 use std::{convert::TryFrom, sync::Arc};
 
 #[derive(Debug)]
@@ -199,5 +200,20 @@ impl TypeInfo {
                 Ok(vty)
             }
         }
+    }
+}
+
+impl Encode<BytesMut> for TypeInfo {
+    fn encode(self, dst: &mut BytesMut) -> Result<()> {
+        match self {
+            TypeInfo::FixedLen(ty) => {
+                dst.put_u8(ty as u8);
+            }
+            unsupported => panic!(
+                "encode does not support this TypeInfo variant {:?}", // TODO
+                unsupported
+            ),
+        }
+        Ok(())
     }
 }

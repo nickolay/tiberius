@@ -1,8 +1,9 @@
-use crate::{Error, SqlReadBytes};
+use crate::{tds::codec::Encode, Error, Result, SqlReadBytes, TokenType};
+use bytes::{BufMut, BytesMut};
 use enumflags2::BitFlags;
 use std::fmt;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct TokenDone {
     status: BitFlags<DoneStatus>,
     cur_cmd: u16,
@@ -55,6 +56,18 @@ impl TokenDone {
 
     pub(crate) fn rows(&self) -> u64 {
         self.done_rows
+    }
+}
+
+impl<'a> Encode<BytesMut> for TokenDone {
+    fn encode(self, dst: &mut BytesMut) -> Result<()> {
+        dst.put_u8(TokenType::Done as u8);
+        dst.put_u16_le(BitFlags::bits(self.status));
+        dst.put_u16_le(self.cur_cmd);
+        // Assuming this is a TDS 7.2+ (SQLServer >= 2005) stream.
+        // Earlier versions used u32.
+        dst.put_u64_le(self.done_rows);
+        Ok(())
     }
 }
 
