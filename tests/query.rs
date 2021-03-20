@@ -4,7 +4,10 @@ use names::{Generator, Name};
 use once_cell::sync::Lazy;
 use std::env;
 use std::sync::Once;
-use tiberius::{numeric::Numeric, xml::XmlData, Result};
+use tiberius::{
+    numeric::Numeric, xml::XmlData, BitFlags, BulkLoadMetadata, ColumnFlag, FixedLenType, Result,
+    TypeInfo,
+};
 use uuid::Uuid;
 
 use runtimes_macro::test_on_runtimes;
@@ -379,7 +382,13 @@ where
     )
     .await?;
 
-    let _res = conn.bulk_load(&format!("##{}", table)).await?;
+    let mut m = BulkLoadMetadata::new();
+    m.add_column(
+        "content",
+        TypeInfo::FixedLen(FixedLenType::Int1),
+        BitFlags::<ColumnFlag>::empty(),
+    );
+    let _res = conn.bulk_load(&format!("##{}", table), &m).await?;
 
     let rows = conn
         .query(format!("SELECT content FROM ##{}", table), &[])

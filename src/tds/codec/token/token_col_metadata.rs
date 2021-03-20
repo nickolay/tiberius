@@ -12,13 +12,13 @@ pub struct TokenColMetaData {
     pub columns: Vec<MetaDataColumn>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MetaDataColumn {
     pub base: BaseMetaDataColumn,
     pub col_name: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BaseMetaDataColumn {
     pub flags: BitFlags<ColumnFlag>,
     pub ty: TypeInfo,

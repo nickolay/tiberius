@@ -9,7 +9,10 @@ pub(crate) use connection::*;
 
 use crate::{
     result::{ExecuteResult, QueryResult},
-    tds::{codec, stream::TokenStream},
+    tds::{
+        codec::{self, BulkLoadMetadata},
+        stream::TokenStream,
+    },
     SqlReadBytes, ToSql,
 };
 use codec::{
@@ -288,12 +291,16 @@ impl<S: AsyncRead + AsyncWrite + Unpin + Send> Client<S> {
     }
 
     /// TODO: what the API should look like?
-    pub async fn bulk_load<'a, 'b>(&'a mut self, table: &str) -> crate::Result<()> {
+    pub async fn bulk_load<'a, 'b>(
+        &'a mut self,
+        table: &str,
+        meta: &BulkLoadMetadata,
+    ) -> crate::Result<()> {
         self.connection.flush_stream().await?;
 
         // 2.2.1.5 Bulk Load
         // 1) first send the INSERT BULK SQL statement
-        let query = format!("INSERT BULK {} (content tinyint)", table); // TODO hardcoded structure
+        let query = format!("INSERT BULK {} ({})", table, meta.get_insert_bulk_cols());
         let req = BatchRequest::new(query, self.connection.context().transaction_descriptor());
         let id = self.connection.context_mut().next_packet_id();
         self.connection.send(PacketHeader::batch(id), req).await?;
@@ -309,7 +316,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin + Send> Client<S> {
 
         // 2) BulkLoadBCP stream, consisting of [2.2.6.1] COLMETADATA token + ROW tokens + DONE
         let id = self.connection.context_mut().next_packet_id();
-        let req = BulkLoadRequest::new();
+        let req = BulkLoadRequest::new(meta);
         self.connection
             .send(PacketHeader::bulk_load(id), req)
             .await?;

@@ -2,7 +2,7 @@ use crate::{tds::codec::Encode, tds::Collation, xml::XmlSchema, Error, Result, S
 use bytes::{BufMut, BytesMut};
 use std::{convert::TryFrom, sync::Arc};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TypeInfo {
     FixedLen(FixedLenType),
     VarLenSized(VarLenType, usize, Option<Collation>),

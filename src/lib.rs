@@ -200,6 +200,8 @@ pub use tds::{codec::ColumnData, numeric, time, xml, EncryptionLevel};
 pub use to_sql::{IntoSql, ToSql};
 pub use uuid::Uuid;
 
+pub use tds::codec::{BitFlags, BulkLoadMetadata, ColumnFlag, FixedLenType, TypeInfo};
+
 use sql_read_bytes::*;
 use tds::codec::*;
 
