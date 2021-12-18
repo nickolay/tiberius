@@ -113,7 +113,7 @@ version = "0.6"
 features = ["compat"]
 
 [dev-dependencies.tokio]
-features = ["macros", "sync", "io-std", "time", "io-util", "net", "rt-multi-thread"]
+features = ["macros", "sync", "io-std", "time", "io-util", "net", "rt-multi-thread", "fs"]
 version = "1.0"
 
 [dev-dependencies.async-std]
@@ -130,6 +130,7 @@ env_logger = "0.7"
 indicatif = "0.16"
 console = "0.14"
 paste = "1.0"
+arrow2 = { version = "0.8.0", features = ["io_csv_read_async"] }
 
 [package.metadata.docs.rs]
 features = ["all", "docs"]
