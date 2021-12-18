@@ -1,3 +1,4 @@
+use enumflags2::BitFlags;
 use indicatif::ProgressBar;
 use once_cell::sync::Lazy;
 use std::env;
@@ -24,13 +25,13 @@ async fn main() -> anyhow::Result<()> {
 
     client
         .execute(
-            "CREATE TABLE ##bulk_test1 (id INT IDENTITY PRIMARY KEY, content VARCHAR(255))",
+            "CREATE TABLE ##bulk_test1 (id INT IDENTITY PRIMARY KEY, content VARCHAR(255) null)",
             &[],
         )
         .await?;
 
     let mut meta = BulkLoadMetadata::new();
-    meta.add_column("content", TypeInfo::int(), ColumnFlag::Nullable.into());
+    meta.add_column("content", TypeInfo::nvarchar(tiberius::TypeLength::Limited(500)), ColumnFlag::Nullable);
 
     let mut req = client.bulk_insert("##bulk_test1", meta).await?;
     let count = 2000i32;

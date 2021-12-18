@@ -99,6 +99,12 @@ impl Encode<BytesMut> for VarLenContext {
             | VarLenType::BigBinary
             | VarLenType::BigVarBin => {
                 dst.put_u16_le(self.len() as u16);
+                // XXX collation
+                dst.put_u8(0);
+                dst.put_u8(0);
+                dst.put_u8(0);
+                dst.put_u8(0);
+                dst.put_u8(0);
             }
             VarLenType::Image | VarLenType::Text | VarLenType::NText => {
                 dst.put_u32_le(self.len() as u32);

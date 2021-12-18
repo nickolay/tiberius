@@ -237,6 +237,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin + Send> Client<S> {
     ///
     /// ```
     /// # use tiberius::{Config, BulkLoadMetadata, TypeInfo, TokenRow, IntoSql};
+    /// # use enumflags2::BitFlags;
     /// # use tokio_util::compat::TokioAsyncWriteCompatExt;
     /// # use std::env;
     /// # #[tokio::main]
@@ -259,7 +260,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin + Send> Client<S> {
     ///
     /// // The request must have correct typing.
     /// let mut meta = BulkLoadMetadata::new();
-    /// meta.add_column("val", TypeInfo::int());
+    /// meta.add_column("val", TypeInfo::int(), BitFlags::empty());
     ///
     /// // Start the bulk insert with the client.
     /// let mut req = client.bulk_insert("##bulk_test", meta).await?;
