@@ -153,3 +153,6 @@ sql-browser-async-std = ["async-std"]
 sql-browser-tokio = ["tokio", "tokio-util"]
 integrated-auth-gssapi = ["libgssapi"]
 bigdecimal = [ "bigdecimal_", "num-bigint" ]
+
+[profile.release]
+debug = true  # cargo instruments -t time --release --example bulk
